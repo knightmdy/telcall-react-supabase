@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { getPhonesWithAllocationDetails, deletePhone } from '@/services/dataService';
+import { getPhonesWithAllocationDetails, deletePhone } from '@/services/supabaseService';
 import PhoneTable from '@/components/phones/PhoneTable';
 import { PhoneWithAllocation } from '@/types';
 import {
@@ -14,21 +14,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const PhonesPage = () => {
   const { toast } = useToast();
-  const [phones, setPhones] = useState<PhoneWithAllocation[]>([]);
   const [phoneToDelete, setPhoneToDelete] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
-  useEffect(() => {
-    // Load phones data
-    loadPhones();
-  }, []);
+  const { data: phones = [], isLoading, error } = useQuery({
+    queryKey: ['phones'],
+    queryFn: getPhonesWithAllocationDetails
+  });
 
-  const loadPhones = () => {
-    const loadedPhones = getPhonesWithAllocationDetails();
-    setPhones(loadedPhones);
-  };
+  const deleteMutation = useMutation({
+    mutationFn: deletePhone,
+    onSuccess: () => {
+      toast({
+        title: "删除成功",
+        description: "手机已成功删除",
+      });
+      queryClient.invalidateQueries({ queryKey: ['phones'] });
+      setPhoneToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "删除失败",
+        description: "无法删除手机: " + (error as Error).message,
+        variant: "destructive",
+      });
+      setPhoneToDelete(null);
+    }
+  });
 
   const handleDeletePhone = (id: string) => {
     setPhoneToDelete(id);
@@ -36,31 +52,17 @@ const PhonesPage = () => {
 
   const confirmDeletePhone = () => {
     if (phoneToDelete) {
-      try {
-        const success = deletePhone(phoneToDelete);
-        if (success) {
-          toast({
-            title: "删除成功",
-            description: "手机已成功删除",
-          });
-          loadPhones();
-        } else {
-          toast({
-            title: "删除失败",
-            description: "无法删除手机",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "错误",
-          description: "发生错误，请重试",
-          variant: "destructive",
-        });
-      }
-      setPhoneToDelete(null);
+      deleteMutation.mutate(phoneToDelete);
     }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">正在加载...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-destructive">加载出错: {(error as Error).message}</div>;
+  }
 
   return (
     <div>

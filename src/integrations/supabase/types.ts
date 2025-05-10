@@ -9,7 +9,114 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      [_ in never]: never
+      allocations: {
+        Row: {
+          allocation_date: string
+          created_at: string
+          employee_id: string
+          expected_return_date: string | null
+          id: string
+          notes: string | null
+          phone_id: string
+          updated_at: string
+        }
+        Insert: {
+          allocation_date?: string
+          created_at?: string
+          employee_id: string
+          expected_return_date?: string | null
+          id?: string
+          notes?: string | null
+          phone_id: string
+          updated_at?: string
+        }
+        Update: {
+          allocation_date?: string
+          created_at?: string
+          employee_id?: string
+          expected_return_date?: string | null
+          id?: string
+          notes?: string | null
+          phone_id?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "allocations_employee_id_fkey"
+            columns: ["employee_id"]
+            isOneToOne: false
+            referencedRelation: "employees"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "allocations_phone_id_fkey"
+            columns: ["phone_id"]
+            isOneToOne: true
+            referencedRelation: "phones"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      employees: {
+        Row: {
+          created_at: string
+          department: string
+          email: string
+          id: string
+          name: string
+          position: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          department: string
+          email: string
+          id?: string
+          name: string
+          position: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          department?: string
+          email?: string
+          id?: string
+          name?: string
+          position?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      phones: {
+        Row: {
+          created_at: string
+          id: string
+          model: string
+          phone_number: string
+          purchase_date: string
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          model: string
+          phone_number: string
+          purchase_date: string
+          status: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          model?: string
+          phone_number?: string
+          purchase_date?: string
+          status?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
     }
     Views: {
       [_ in never]: never

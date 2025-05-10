@@ -1,7 +1,7 @@
 
 import { useState, useEffect } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { getAllAllocations, getAllPhones, getAllEmployees, deleteAllocation } from '@/services/dataService';
+import { getAllAllocations, getAllPhones, getAllEmployees, deleteAllocation } from '@/services/supabaseService';
 import AllocationTable from '@/components/allocations/AllocationTable';
 import {
   AlertDialog,
@@ -13,38 +13,62 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const AllocationsPage = () => {
   const { toast } = useToast();
-  const [allocations, setAllocations] = useState<any[]>([]);
   const [allocationToDelete, setAllocationToDelete] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
-  useEffect(() => {
-    // Load allocations data
-    loadAllocations();
-  }, []);
+  const { data: rawAllocations = [] } = useQuery({
+    queryKey: ['allocations'],
+    queryFn: getAllAllocations
+  });
 
-  const loadAllocations = () => {
-    const rawAllocations = getAllAllocations();
-    const phones = getAllPhones();
-    const employees = getAllEmployees();
+  const { data: phones = [] } = useQuery({
+    queryKey: ['phones'],
+    queryFn: getAllPhones
+  });
+
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: getAllEmployees
+  });
+
+  const formattedAllocations = rawAllocations.map(allocation => {
+    const phone = phones.find(p => p.id === allocation.phoneId);
+    const employee = employees.find(e => e.id === allocation.employeeId);
     
-    const formattedAllocations = rawAllocations.map(allocation => {
-      const phone = phones.find(p => p.id === allocation.phoneId);
-      const employee = employees.find(e => e.id === allocation.employeeId);
-      
-      return {
-        id: allocation.id,
-        phone: phone!,
-        employee: employee!,
-        allocationDate: allocation.allocationDate,
-        expectedReturnDate: allocation.expectedReturnDate,
-        notes: allocation.notes
-      };
-    });
-    
-    setAllocations(formattedAllocations);
-  };
+    return {
+      id: allocation.id,
+      phone: phone!,
+      employee: employee!,
+      allocationDate: allocation.allocationDate,
+      expectedReturnDate: allocation.expectedReturnDate,
+      notes: allocation.notes
+    };
+  });
+
+  const deleteMutation = useMutation({
+    mutationFn: deleteAllocation,
+    onSuccess: () => {
+      toast({
+        title: "取消分配成功",
+        description: "手机已成功取消分配",
+      });
+      queryClient.invalidateQueries({ queryKey: ['allocations'] });
+      queryClient.invalidateQueries({ queryKey: ['phones'] });
+      setAllocationToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "取消分配失败",
+        description: "无法取消分配: " + (error as Error).message,
+        variant: "destructive",
+      });
+      setAllocationToDelete(null);
+    }
+  });
 
   const handleUnallocate = (id: string) => {
     setAllocationToDelete(id);
@@ -52,36 +76,23 @@ const AllocationsPage = () => {
 
   const confirmUnallocate = () => {
     if (allocationToDelete) {
-      try {
-        const success = deleteAllocation(allocationToDelete);
-        if (success) {
-          toast({
-            title: "取消分配成功",
-            description: "手机已成功取消分配",
-          });
-          loadAllocations();
-        } else {
-          toast({
-            title: "取消分配失败",
-            description: "无法取消分配",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "错误",
-          description: "发生错误，请重试",
-          variant: "destructive",
-        });
-      }
-      setAllocationToDelete(null);
+      deleteMutation.mutate(allocationToDelete);
     }
   };
+
+  const isLoading = 
+    rawAllocations === undefined || 
+    phones === undefined || 
+    employees === undefined;
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">正在加载...</div>;
+  }
 
   return (
     <div>
       <h1 className="text-3xl font-bold mb-6">分配管理</h1>
-      <AllocationTable allocations={allocations} onUnallocate={handleUnallocate} />
+      <AllocationTable allocations={formattedAllocations} onUnallocate={handleUnallocate} />
       
       <AlertDialog open={!!allocationToDelete} onOpenChange={() => setAllocationToDelete(null)}>
         <AlertDialogContent>

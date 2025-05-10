@@ -1,12 +1,13 @@
 
 import { useMemo } from 'react';
+import { useQuery } from '@tanstack/react-query';
 import { 
   getAllPhones, 
   getAllEmployees, 
   getAllAllocations,
   getPhonesWithAllocationDetails,
   getEmployeesWithAllocations
-} from '@/services/dataService';
+} from '@/services/supabaseService';
 import StatCard from '@/components/dashboard/StatCard';
 import StatusPieChart from '@/components/dashboard/StatusPieChart';
 import DepartmentBarChart from '@/components/dashboard/DepartmentBarChart';
@@ -14,14 +15,33 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Phone, User, PhoneCall, Users } from 'lucide-react';
 
 const Dashboard = () => {
-  // Fetch data
-  const phones = getAllPhones();
-  const employees = getAllEmployees();
-  const allocations = getAllAllocations();
-  const phonesWithDetails = getPhonesWithAllocationDetails();
-  const employeesWithAllocations = getEmployeesWithAllocations();
+  // 获取数据
+  const { data: phones = [] } = useQuery({
+    queryKey: ['phones'],
+    queryFn: getAllPhones
+  });
+  
+  const { data: employees = [] } = useQuery({
+    queryKey: ['employees'],
+    queryFn: getAllEmployees
+  });
+  
+  const { data: allocations = [] } = useQuery({
+    queryKey: ['allocations'],
+    queryFn: getAllAllocations
+  });
+  
+  const { data: phonesWithDetails = [] } = useQuery({
+    queryKey: ['phonesWithDetails'],
+    queryFn: getPhonesWithAllocationDetails
+  });
+  
+  const { data: employeesWithAllocations = [] } = useQuery({
+    queryKey: ['employeesWithAllocations'],
+    queryFn: getEmployeesWithAllocations
+  });
 
-  // Calculate stats
+  // 计算统计数据
   const totalPhones = phones.length;
   const allocatedPhones = phones.filter(p => p.status === 'Allocated').length;
   const availablePhones = phones.filter(p => p.status === 'Available').length;
@@ -30,14 +50,14 @@ const Dashboard = () => {
   const totalEmployees = employees.length;
   const employeesWithPhone = employeesWithAllocations.filter(e => e.allocations.length > 0).length;
 
-  // Prepare chart data
+  // 准备图表数据
   const statusChartData = useMemo(() => [
     { name: '已分配', value: allocatedPhones, color: '#3182CE' },
     { name: '可用', value: availablePhones, color: '#38A169' },
     { name: '维修中', value: maintenancePhones, color: '#DD6B20' },
   ], [allocatedPhones, availablePhones, maintenancePhones]);
 
-  // Group allocations by department
+  // 按部门分组
   const departmentData = useMemo(() => {
     const departmentCounts = new Map<string, number>();
     
@@ -54,25 +74,39 @@ const Dashboard = () => {
     }));
   }, [employeesWithAllocations]);
 
-  // Recent allocations
+  // 最近的分配
   const recentAllocations = useMemo(() => {
     return allocations
       .map(allocation => {
         const phone = phones.find(p => p.id === allocation.phoneId);
         const employee = employees.find(e => e.id === allocation.employeeId);
         
+        if (!phone || !employee) return null;
+        
         return {
           id: allocation.id,
           date: allocation.allocationDate,
-          phoneModel: phone?.model || '',
-          phoneNumber: phone?.phoneNumber || '',
-          employeeName: employee?.name || '',
-          department: employee?.department || ''
+          phoneModel: phone.model,
+          phoneNumber: phone.phoneNumber,
+          employeeName: employee.name,
+          department: employee.department
         };
       })
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .filter(Boolean)
+      .sort((a, b) => new Date(b!.date).getTime() - new Date(a!.date).getTime())
       .slice(0, 5);
   }, [allocations, phones, employees]);
+
+  const isLoading = 
+    phones === undefined || 
+    employees === undefined || 
+    allocations === undefined ||
+    phonesWithDetails === undefined ||
+    employeesWithAllocations === undefined;
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">正在加载...</div>;
+  }
 
   return (
     <div className="space-y-6">
@@ -81,7 +115,7 @@ const Dashboard = () => {
         <p className="text-muted-foreground">查看办公电话分配系统的关键指标</p>
       </div>
 
-      {/* Stats */}
+      {/* 统计卡片 */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
         <StatCard 
           title="总手机数" 
@@ -92,7 +126,7 @@ const Dashboard = () => {
           title="可用手机" 
           value={availablePhones} 
           icon={<Phone size={24} />} 
-          description={`${Math.round((availablePhones / totalPhones) * 100)}% 的手机可用`}
+          description={totalPhones > 0 ? `${Math.round((availablePhones / totalPhones) * 100)}% 的手机可用` : '暂无手机'}
         />
         <StatCard 
           title="已分配" 
@@ -108,7 +142,7 @@ const Dashboard = () => {
         />
       </div>
 
-      {/* Charts */}
+      {/* 图表 */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         <Card>
           <CardHeader>
@@ -129,7 +163,7 @@ const Dashboard = () => {
         </Card>
       </div>
 
-      {/* Recent allocations */}
+      {/* 最近分配 */}
       <Card>
         <CardHeader>
           <CardTitle>最近分配</CardTitle>
@@ -147,21 +181,22 @@ const Dashboard = () => {
                 </tr>
               </thead>
               <tbody>
-                {recentAllocations.map(allocation => (
-                  <tr key={allocation.id} className="border-b hover:bg-muted/50">
-                    <td className="py-2 px-4">{allocation.date}</td>
-                    <td className="py-2 px-4">
-                      <div className="flex items-center">
-                        <User className="h-4 w-4 mr-2 text-primary" />
-                        {allocation.employeeName}
-                      </div>
-                    </td>
-                    <td className="py-2 px-4">{allocation.department}</td>
-                    <td className="py-2 px-4">{allocation.phoneModel}</td>
-                    <td className="py-2 px-4">{allocation.phoneNumber}</td>
-                  </tr>
-                ))}
-                {recentAllocations.length === 0 && (
+                {recentAllocations && recentAllocations.length > 0 ? (
+                  recentAllocations.map(allocation => (
+                    <tr key={allocation!.id} className="border-b hover:bg-muted/50">
+                      <td className="py-2 px-4">{allocation!.date}</td>
+                      <td className="py-2 px-4">
+                        <div className="flex items-center">
+                          <User className="h-4 w-4 mr-2 text-primary" />
+                          {allocation!.employeeName}
+                        </div>
+                      </td>
+                      <td className="py-2 px-4">{allocation!.department}</td>
+                      <td className="py-2 px-4">{allocation!.phoneModel}</td>
+                      <td className="py-2 px-4">{allocation!.phoneNumber}</td>
+                    </tr>
+                  ))
+                ) : (
                   <tr>
                     <td colSpan={5} className="py-4 text-center text-muted-foreground">
                       没有最近的分配记录

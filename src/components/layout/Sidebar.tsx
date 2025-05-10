@@ -1,97 +1,133 @@
 
-import { cn } from "@/lib/utils";
-import { 
-  Home, 
-  Phone, 
-  PhoneCall, 
-  User, 
-  Users
-} from "lucide-react";
-import { Link, useLocation } from "react-router-dom";
+import { Link, useLocation } from 'react-router-dom';
+import { Button } from '@/components/ui/button';
+import { cn } from '@/lib/utils';
+import { useAuth } from '@/contexts/AuthContext';
+import {
+  Phone,
+  UserRound,
+  Share2,
+  LayoutDashboard,
+  LogOut,
+  Settings
+} from 'lucide-react';
 
 interface SidebarProps {
-  collapsed: boolean;
-  setCollapsed: (collapsed: boolean) => void;
+  isMobile: boolean;
+  toggleSidebar: () => void;
 }
 
-const Sidebar = ({ collapsed, setCollapsed }: SidebarProps) => {
+const Sidebar = ({ isMobile, toggleSidebar }: SidebarProps) => {
   const location = useLocation();
-  
-  const navigationItems = [
-    {
-      name: "Dashboard",
-      path: "/",
-      icon: Home
-    },
-    {
-      name: "Phones",
-      path: "/phones",
-      icon: Phone
-    },
-    {
-      name: "Employees",
-      path: "/employees",
-      icon: Users
-    },
-    {
-      name: "Allocations",
-      path: "/allocations",
-      icon: PhoneCall
+  const { user, signOut } = useAuth();
+
+  const closeSidebarOnMobile = () => {
+    if (isMobile) {
+      toggleSidebar();
     }
-  ];
+  };
+
+  const isActive = (path: string) => {
+    return location.pathname === path || location.pathname.startsWith(`${path}/`);
+  };
 
   return (
-    <div 
+    <aside
       className={cn(
-        "bg-sidebar h-full fixed left-0 top-0 transition-all duration-300 z-40 shadow-md flex flex-col",
-        collapsed ? "w-16" : "w-64"
+        'h-full bg-primary-foreground border-r flex flex-col justify-between transition-all duration-300 ease-in-out',
+        isMobile ? 'w-64' : 'w-64'
       )}
     >
-      <div className="flex items-center justify-between h-16 px-4 border-b border-sidebar-border bg-sidebar-accent">
-        <div className={cn(
-          "flex items-center text-sidebar-foreground font-bold text-xl transition-all",
-          collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-        )}>
-          电话系统
+      <div>
+        <div className="p-4">
+          <h1 className="text-xl font-bold text-primary">办公电话调配系统</h1>
         </div>
-        <button
-          onClick={() => setCollapsed(!collapsed)}
-          className="text-sidebar-foreground p-2 rounded-md hover:bg-sidebar-accent hover:bg-opacity-50 transition-all"
-        >
-          {collapsed ? (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-right"><path d="m9 18 6-6-6-6"/></svg>
-          ) : (
-            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="lucide lucide-chevron-left"><path d="m15 18-6-6 6-6"/></svg>
+        <nav className="space-y-1 p-2">
+          <NavItem
+            icon={<LayoutDashboard size={18} />}
+            to="/dashboard"
+            label="仪表盘"
+            active={isActive('/dashboard')}
+            onClick={closeSidebarOnMobile}
+          />
+          <NavItem
+            icon={<Phone size={18} />}
+            to="/phones"
+            label="手机管理"
+            active={isActive('/phones')}
+            onClick={closeSidebarOnMobile}
+          />
+          <NavItem
+            icon={<UserRound size={18} />}
+            to="/employees"
+            label="员工管理"
+            active={isActive('/employees')}
+            onClick={closeSidebarOnMobile}
+          />
+          <NavItem
+            icon={<Share2 size={18} />}
+            to="/allocations"
+            label="分配管理"
+            active={isActive('/allocations')}
+            onClick={closeSidebarOnMobile}
+          />
+          <NavItem
+            icon={<Settings size={18} />}
+            to="/settings"
+            label="系统设置"
+            active={isActive('/settings')}
+            onClick={closeSidebarOnMobile}
+          />
+        </nav>
+      </div>
+
+      <div className="p-4 border-t">
+        <div className="flex flex-col space-y-2">
+          {user && (
+            <>
+              <div className="px-3 py-2 text-sm">
+                <div className="font-medium">{user.email}</div>
+                <div className="text-muted-foreground text-xs">已登录</div>
+              </div>
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                size="sm"
+                onClick={signOut}
+              >
+                <LogOut size={16} className="mr-2" />
+                退出登录
+              </Button>
+            </>
           )}
-        </button>
+        </div>
       </div>
-      
-      <div className="flex flex-col flex-1 overflow-y-auto py-4">
-        {navigationItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          const Icon = item.icon;
-          
-          return (
-            <Link
-              key={item.name}
-              to={item.path}
-              className={cn(
-                "flex items-center px-4 py-3 text-sidebar-foreground hover:bg-sidebar-accent transition-colors",
-                isActive && "bg-sidebar-accent font-medium"
-              )}
-            >
-              <Icon className="h-5 w-5" />
-              <span className={cn(
-                "ml-3 transition-all",
-                collapsed ? "opacity-0 w-0 overflow-hidden" : "opacity-100"
-              )}>
-                {item.name}
-              </span>
-            </Link>
-          );
-        })}
-      </div>
-    </div>
+    </aside>
+  );
+};
+
+interface NavItemProps {
+  icon: React.ReactNode;
+  to: string;
+  label: string;
+  active: boolean;
+  onClick: () => void;
+}
+
+const NavItem = ({ icon, to, label, active, onClick }: NavItemProps) => {
+  return (
+    <Link to={to} onClick={onClick}>
+      <Button
+        variant={active ? 'secondary' : 'ghost'}
+        className={cn(
+          'w-full justify-start',
+          active ? 'bg-secondary' : 'hover:bg-secondary/50'
+        )}
+      >
+        {icon}
+        <span className="ml-2">{label}</span>
+      </Button>
+    </Link>
   );
 };
 

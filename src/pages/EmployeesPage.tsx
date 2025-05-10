@@ -1,9 +1,8 @@
 
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useToast } from "@/hooks/use-toast";
-import { getEmployeesWithAllocations, deleteEmployee } from '@/services/dataService';
+import { getEmployeesWithAllocations, deleteEmployee } from '@/services/supabaseService';
 import EmployeeTable from '@/components/employees/EmployeeTable';
-import { EmployeeWithAllocations } from '@/types';
 import {
   AlertDialog,
   AlertDialogAction,
@@ -14,21 +13,37 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 
 const EmployeesPage = () => {
   const { toast } = useToast();
-  const [employees, setEmployees] = useState<EmployeeWithAllocations[]>([]);
   const [employeeToDelete, setEmployeeToDelete] = useState<string | null>(null);
+  const queryClient = useQueryClient();
   
-  useEffect(() => {
-    // Load employees data
-    loadEmployees();
-  }, []);
+  const { data: employees = [], isLoading, error } = useQuery({
+    queryKey: ['employees'],
+    queryFn: getEmployeesWithAllocations
+  });
 
-  const loadEmployees = () => {
-    const loadedEmployees = getEmployeesWithAllocations();
-    setEmployees(loadedEmployees);
-  };
+  const deleteMutation = useMutation({
+    mutationFn: deleteEmployee,
+    onSuccess: () => {
+      toast({
+        title: "删除成功",
+        description: "员工已成功删除",
+      });
+      queryClient.invalidateQueries({ queryKey: ['employees'] });
+      setEmployeeToDelete(null);
+    },
+    onError: (error) => {
+      toast({
+        title: "删除失败",
+        description: "无法删除员工: " + (error as Error).message,
+        variant: "destructive",
+      });
+      setEmployeeToDelete(null);
+    }
+  });
 
   const handleDeleteEmployee = (id: string) => {
     setEmployeeToDelete(id);
@@ -36,31 +51,17 @@ const EmployeesPage = () => {
 
   const confirmDeleteEmployee = () => {
     if (employeeToDelete) {
-      try {
-        const success = deleteEmployee(employeeToDelete);
-        if (success) {
-          toast({
-            title: "删除成功",
-            description: "员工已成功删除",
-          });
-          loadEmployees();
-        } else {
-          toast({
-            title: "删除失败",
-            description: "无法删除员工",
-            variant: "destructive",
-          });
-        }
-      } catch (error) {
-        toast({
-          title: "错误",
-          description: "发生错误，请重试",
-          variant: "destructive",
-        });
-      }
-      setEmployeeToDelete(null);
+      deleteMutation.mutate(employeeToDelete);
     }
   };
+
+  if (isLoading) {
+    return <div className="flex justify-center p-8">正在加载...</div>;
+  }
+
+  if (error) {
+    return <div className="p-8 text-center text-destructive">加载出错: {(error as Error).message}</div>;
+  }
 
   return (
     <div>
