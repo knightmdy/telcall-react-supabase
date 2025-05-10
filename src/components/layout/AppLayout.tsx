@@ -8,15 +8,23 @@ interface AppLayoutProps {
 }
 
 const AppLayout = ({ children }: AppLayoutProps) => {
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+  const [isMobile, setIsMobile] = useState(false);
+  const [sidebarOpen, setSidebarOpen] = useState(true);
+
+  const toggleSidebar = () => {
+    setSidebarOpen(!sidebarOpen);
+  };
 
   return (
     <div className="flex h-screen bg-background">
-      <Sidebar collapsed={sidebarCollapsed} setCollapsed={setSidebarCollapsed} />
+      <Sidebar 
+        isMobile={isMobile} 
+        toggleSidebar={toggleSidebar} 
+      />
       <div 
         className={cn(
           "flex-1 transition-all duration-300 overflow-auto",
-          sidebarCollapsed ? "ml-16" : "ml-64"
+          sidebarOpen ? "ml-64" : "ml-16"
         )}
       >
         <div className="container mx-auto py-4 px-6">
