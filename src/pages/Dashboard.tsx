@@ -1,4 +1,3 @@
-
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -16,27 +15,27 @@ import { Phone, User, PhoneCall, Users } from 'lucide-react';
 
 const Dashboard = () => {
   // 获取数据
-  const { data: phones = [] } = useQuery({
+  const { data: phones = [], isLoading: phonesLoading } = useQuery({
     queryKey: ['phones'],
     queryFn: getAllPhones
   });
   
-  const { data: employees = [] } = useQuery({
+  const { data: employees = [], isLoading: employeesLoading } = useQuery({
     queryKey: ['employees'],
     queryFn: getAllEmployees
   });
   
-  const { data: allocations = [] } = useQuery({
+  const { data: allocations = [], isLoading: allocationsLoading } = useQuery({
     queryKey: ['allocations'],
     queryFn: getAllAllocations
   });
   
-  const { data: phonesWithDetails = [] } = useQuery({
+  const { data: phonesWithDetails = [], isLoading: phonesDetailsLoading } = useQuery({
     queryKey: ['phonesWithDetails'],
     queryFn: getPhonesWithAllocationDetails
   });
   
-  const { data: employeesWithAllocations = [] } = useQuery({
+  const { data: employeesWithAllocations = [], isLoading: employeesAllocationsLoading } = useQuery({
     queryKey: ['employeesWithAllocations'],
     queryFn: getEmployeesWithAllocations
   });
@@ -98,11 +97,11 @@ const Dashboard = () => {
   }, [allocations, phones, employees]);
 
   const isLoading = 
-    phones === undefined || 
-    employees === undefined || 
-    allocations === undefined ||
-    phonesWithDetails === undefined ||
-    employeesWithAllocations === undefined;
+    phonesLoading || 
+    employeesLoading || 
+    allocationsLoading ||
+    phonesDetailsLoading ||
+    employeesAllocationsLoading;
 
   if (isLoading) {
     return <div className="flex justify-center p-8">正在加载...</div>;

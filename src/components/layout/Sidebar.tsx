@@ -28,6 +28,9 @@ const Sidebar = ({ isMobile, toggleSidebar }: SidebarProps) => {
   };
 
   const isActive = (path: string) => {
+    if (path === '/dashboard' && location.pathname === '/') {
+      return true;
+    }
     return location.pathname === path || location.pathname.startsWith(`${path}/`);
   };
 

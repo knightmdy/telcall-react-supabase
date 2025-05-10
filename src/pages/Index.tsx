@@ -1,5 +1,4 @@
 
-import { useState } from 'react';
 import { Routes, Route } from 'react-router-dom';
 import AppLayout from '@/components/layout/AppLayout';
 
@@ -13,6 +12,7 @@ import AddEmployeePage from '@/pages/AddEmployeePage';
 import EditEmployeePage from '@/pages/EditEmployeePage';
 import AllocationsPage from '@/pages/AllocationsPage';
 import AllocationFormPage from '@/pages/AllocationFormPage';
+import SettingsPage from '@/pages/Settings';
 import NotFoundPage from '@/pages/NotFound';
 
 const Index = () => {
@@ -20,6 +20,7 @@ const Index = () => {
     <AppLayout>
       <Routes>
         <Route index element={<Dashboard />} />
+        <Route path="dashboard" element={<Dashboard />} />
         <Route path="phones" element={<PhonesPage />} />
         <Route path="phones/add" element={<AddPhonePage />} />
         <Route path="phones/edit/:id" element={<EditPhonePage />} />
@@ -30,6 +31,7 @@ const Index = () => {
         <Route path="allocations/allocate" element={<AllocationFormPage />} />
         <Route path="allocations/allocate/:phoneId" element={<AllocationFormPage />} />
         <Route path="allocations/allocate-to-employee/:employeeId" element={<AllocationFormPage />} />
+        <Route path="settings" element={<SettingsPage />} />
         <Route path="*" element={<NotFoundPage />} />
       </Routes>
     </AppLayout>
