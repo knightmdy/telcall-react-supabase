@@ -29,7 +29,9 @@ const EmployeeTable = ({ employees, onDeleteEmployee }: EmployeeTableProps) => {
   const departments = useMemo(() => {
     const deptSet = new Set<string>();
     employees.forEach(employee => {
-      deptSet.add(employee.department);
+      if (employee && employee.department) {
+        deptSet.add(employee.department);
+      }
     });
     return Array.from(deptSet).sort();
   }, [employees]);
@@ -129,7 +131,7 @@ const EmployeeTable = ({ employees, onDeleteEmployee }: EmployeeTableProps) => {
                 <td className="p-3">{employee.email}</td>
                 <td className="p-3">
                   <div className="flex flex-wrap gap-1">
-                    {employee.allocations.length > 0 ? (
+                    {employee.allocations && employee.allocations.length > 0 ? (
                       employee.allocations.map(allocation => (
                         <Badge key={allocation.id} className="bg-blue-500">
                           {allocation.phone.model}
@@ -149,11 +151,11 @@ const EmployeeTable = ({ employees, onDeleteEmployee }: EmployeeTableProps) => {
                       variant="destructive" 
                       size="sm" 
                       onClick={() => onDeleteEmployee(employee.id)}
-                      disabled={employee.allocations.length > 0}
+                      disabled={employee.allocations && employee.allocations.length > 0}
                     >
                       删除
                     </Button>
-                    {employee.allocations.length === 0 && (
+                    {(!employee.allocations || employee.allocations.length === 0) && (
                       <Button 
                         variant="default" 
                         size="sm"
@@ -162,7 +164,7 @@ const EmployeeTable = ({ employees, onDeleteEmployee }: EmployeeTableProps) => {
                         分配手机
                       </Button>
                     )}
-                    {employee.allocations.length > 0 && (
+                    {employee.allocations && employee.allocations.length > 0 && (
                       <Button 
                         variant="secondary" 
                         size="sm"

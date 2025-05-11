@@ -12,8 +12,9 @@ import AddEmployeePage from '@/pages/AddEmployeePage';
 import EditEmployeePage from '@/pages/EditEmployeePage';
 import AllocationsPage from '@/pages/AllocationsPage';
 import AllocationFormPage from '@/pages/AllocationFormPage';
-import SettingsPage from '@/pages/Settings';
+import SettingsPage from '@/pages/SettingsPage';
 import NotFoundPage from '@/pages/NotFound';
+import EmployeeAllocationsPage from '@/pages/EmployeeAllocationsPage';
 
 const Index = () => {
   return (
@@ -27,6 +28,7 @@ const Index = () => {
         <Route path="employees" element={<EmployeesPage />} />
         <Route path="employees/add" element={<AddEmployeePage />} />
         <Route path="employees/edit/:id" element={<EditEmployeePage />} />
+        <Route path="employees/allocations/:id" element={<EmployeeAllocationsPage />} />
         <Route path="allocations" element={<AllocationsPage />} />
         <Route path="allocations/allocate" element={<AllocationFormPage />} />
         <Route path="allocations/allocate/:phoneId" element={<AllocationFormPage />} />
