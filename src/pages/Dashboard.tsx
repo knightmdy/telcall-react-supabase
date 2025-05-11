@@ -1,3 +1,4 @@
+
 import { useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { 
@@ -41,13 +42,13 @@ const Dashboard = () => {
   });
 
   // 计算统计数据
-  const totalPhones = phones.length;
-  const allocatedPhones = phones.filter(p => p.status === 'Allocated').length;
-  const availablePhones = phones.filter(p => p.status === 'Available').length;
-  const maintenancePhones = phones.filter(p => p.status === 'Maintenance').length;
+  const totalPhones = phones?.length || 0;
+  const allocatedPhones = phones?.filter(p => p.status === 'Allocated')?.length || 0;
+  const availablePhones = phones?.filter(p => p.status === 'Available')?.length || 0;
+  const maintenancePhones = phones?.filter(p => p.status === 'Maintenance')?.length || 0;
   
-  const totalEmployees = employees.length;
-  const employeesWithPhone = employeesWithAllocations.filter(e => e.allocations.length > 0).length;
+  const totalEmployees = employees?.length || 0;
+  const employeesWithPhone = employeesWithAllocations?.filter(e => e.allocations && e.allocations.length > 0)?.length || 0;
 
   // 准备图表数据
   const statusChartData = useMemo(() => [
@@ -60,8 +61,10 @@ const Dashboard = () => {
   const departmentData = useMemo(() => {
     const departmentCounts = new Map<string, number>();
     
+    if (!employeesWithAllocations) return [];
+    
     employeesWithAllocations.forEach(employee => {
-      if (employee.allocations.length > 0) {
+      if (employee.allocations && employee.allocations.length > 0) {
         const dept = employee.department;
         departmentCounts.set(dept, (departmentCounts.get(dept) || 0) + employee.allocations.length);
       }
@@ -75,6 +78,8 @@ const Dashboard = () => {
 
   // 最近的分配
   const recentAllocations = useMemo(() => {
+    if (!allocations || !phones || !employees) return [];
+    
     return allocations
       .map(allocation => {
         const phone = phones.find(p => p.id === allocation.phoneId);
